@@ -1,0 +1,57 @@
+{
+  "accounts": {
+    "jwt": {
+      "exp": 604800,
+      "key": "bezkoder-secret-key"
+    },
+    "reset": {
+      "exp": 8.64e+7
+    }
+  },
+  "sentry": {
+    "dsn": null,
+    "env": "staging"
+  },
+  "logger": {
+    "console": true
+  },
+  "papertrail": {
+    "host": null,
+    "port": null,
+    "program": "api-staging",
+    "handleExceptions": true
+  },
+  "www": {
+    "port": 4000
+  },
+  "app": {
+    "webAppRoot": "http://localhost:4000"
+  },
+  "mail": {
+    "enabled": false,
+    "locale": "en",
+    "sender": {
+      "accounts": {
+        "email": "vicky.mudgal88@gmail.com",
+        "name": "MarkersArt | Accounts"
+      }
+    }
+  },
+  "sendgrid": {
+    "APIKey": "SENDGRID_API_KEY",
+    "template": {
+      "en": {
+        "accountsResetPassword": "d-85f352d5a7de47babe3b8137f8ca9214"
+      }
+    }
+  },
+  "aws": {
+    "key": "",
+    "secret": "",
+    "bucket": "",
+    "bucketUrl": ""
+  },
+  "mongoDb": {
+    "uri": "mongodb://127.0.0.1:27017/node_demo"
+  }
+}
