@@ -81,7 +81,15 @@ module.exports = function (app) {
       userController.updateProfileImage(req, res, next)
     })
 
-    app.post('/user-follow-request', helpers.Authorize.checkUserAuth, function (req, res, next) {
+    app.post('/user-follow-request', helpers.Authorize.checkUserAuth, userRules.validate('followRequest'), function (req, res, next) {
+      const errors = validationResult(req)
+      
+      if (!errors.isEmpty()) {
+        const error = errors.array()[0]
+        return res.status(422).json(
+          helpers.response.error({ msg: error.msg, field: error.param })
+        )
+      }
       userController.followRequest(req, res, next)
     })
   })

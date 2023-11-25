@@ -58,7 +58,6 @@ module.exports = class UserController {
   }
 
   async getUserList(req, res, next) {
-    console.log(req.userData.sub);
     helpers.db.User
       .aggregate([
         // First Way
@@ -95,6 +94,23 @@ module.exports = class UserController {
               }
             }],
             as: "matches"
+          }
+        },
+        {
+          $lookup: {
+            from: "user_follow_requests",
+            let: { userId: "$_id" },
+            pipeline: [{
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: [new helpers.db.ObjectId(req.userData.sub), "$to_id"] },
+                    { $eq: ["$$userId", "$from_id"] }
+                  ]
+                }
+              }
+            }],
+            as: "follow_request"
           }
         }
         // {
@@ -181,9 +197,14 @@ module.exports = class UserController {
 
   async followRequest(req, res, next) {
     const userRequest = new helpers.db.UserFollowRequest(req.body)
-    userRequest.status = 1;
     await userRequest.save()
-      .then((userRequestData) => {
+      .then(async (userRequestData) => {
+        await new helpers.db.Notification({
+          from_id: req.body.from_id,
+          to_id: req.body.to_id,
+          notification_type: "Follow Request",
+          notification_message: "You get new follow request!"
+        }).save();
         res.status(200).json(
           helpers.response.success({
             msg: 'Your follow request has been sent',

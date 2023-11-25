@@ -9,6 +9,7 @@ mongoose.Promise = global.Promise;
 module.exports = {
     User: require('../models/user.model'),
     UserFollowRequest: require('../models/userFollowRequest.model'),
+    Notification: require('../models/notification.model'),
     // RefreshToken: require('accounts/refresh-token.model'),
     isValidId,
     ObjectId
