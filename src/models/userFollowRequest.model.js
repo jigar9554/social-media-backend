@@ -12,7 +12,7 @@ const schema = new mongoose.Schema({
         ref: "User"
     },
     acceptStatus: { type: Boolean, default: 0 },
-    followBack: { type: Boolean, default: 0 },
+    // followBack: { type: Boolean, default: 0 },
     created: { type: Date, default: Date.now },
     updated: Date
 });

@@ -93,7 +93,7 @@ module.exports = class UserController {
                 }
               }
             }],
-            as: "matches"
+            as: "following"
           }
         },
         {
@@ -110,7 +110,68 @@ module.exports = class UserController {
                 }
               }
             }],
-            as: "follow_request"
+            as: "follow"
+          }
+        },
+        {
+          $unwind: {
+            path: "$follow",
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $unwind: {
+            path: "$following",
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        { 
+          $project : { 
+            "_id": 1,
+            "firstName": 1,
+            "lastName": 1,
+            "email": 1,
+            "mobile": 1,
+            "password": 1,
+            "role": 1,
+            "created": 1,
+            "userName": 1,
+            "isFollow": {
+              // $ifNull: ["$follow.acceptStatus", false]
+              $cond: [
+                { $and: [
+                  { $ifNull: ["$follow", null] }
+                ]},
+                { $cond: [
+                  {$eq: ["$follow.acceptStatus", true]},
+                  true,
+                  false
+                ]},
+                null
+              ]
+            },
+            "follow": {
+              // "$arrayElemAt": ["$follow", 0]
+              $ifNull: ["$follow", {}],
+            },
+            "isFollowing": {
+              // $ifNull: ["$following.acceptStatus", false]
+              $cond: [
+                { $and: [
+                  { $ifNull: ["$following", null] }
+                ]},
+                { $cond: [
+                  {$eq: ["$following.acceptStatus", true]},
+                  true,
+                  false
+                ]},
+                null
+              ]
+            },
+            "following": {
+              $ifNull: ["$following", {}],
+              // "$arrayElemAt": ["$following", 0]
+            }
           }
         }
         // {
@@ -193,29 +254,6 @@ module.exports = class UserController {
           error: err
         })
       });
-  }
-
-  async followRequest(req, res, next) {
-    const userRequest = new helpers.db.UserFollowRequest(req.body)
-    await userRequest.save()
-      .then(async (userRequestData) => {
-        await new helpers.db.Notification({
-          from_id: req.body.from_id,
-          to_id: req.body.to_id,
-          notification_type: "Follow Request",
-          notification_message: "You get new follow request!"
-        }).save();
-        res.status(200).json(
-          helpers.response.success({
-            msg: 'Your follow request has been sent',
-            data: null
-          })
-        )
-      }).catch((error) => {
-        return res.status(500).json(
-          helpers.response.error({ msg: error, field: null })
-        )
-      })
   }
 
   static hash(password) {
