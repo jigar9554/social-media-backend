@@ -160,6 +160,7 @@ module.exports = class UserController {
             "role": 1,
             "created": 1,
             "userName": 1,
+            "profileImage": 1,
             "isFollow": {
               // $ifNull: ["$follow.acceptStatus", false]
               $cond: [
