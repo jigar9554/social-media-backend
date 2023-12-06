@@ -8,7 +8,7 @@ module.exports = class UserController {
         "to_id": new helpers.db.ObjectId(req.userData.sub),
         "acceptStatus": true
       })
-      .populate('from_id',  'firstName lastName is_online')
+      .populate('from_id',  'firstName lastName is_online profileImage')
       // .where('acceptStatus').equals(true)
       .exec()
       .then((result) => {
