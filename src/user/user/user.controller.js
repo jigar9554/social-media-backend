@@ -38,6 +38,10 @@ module.exports = class UserController {
   async login(req, res, next) {
     try {
       const user = await helpers.db.User.findOne({ $or: [{ email: req.body.email }, { mobile: req.body.email }] })
+      helpers.db.User.updateOne({
+        _id: new helpers.db.ObjectId(user._id)
+      }, { $set: { is_online: true } })
+      .exec()
 
       const token = jwt.sign({ sub: user._id }, config.get('accounts.jwt.key'), { expiresIn: config.get('accounts.jwt.exp') })
       res.status(200).json(
