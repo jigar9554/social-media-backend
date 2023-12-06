@@ -12,6 +12,7 @@ const schema = new mongoose.Schema({
     profileImage: { type: String, required: false },
     role: { type: String, required: true },
     verified: Date,
+    is_online: { type: Boolean, default: false },
     resetToken: {
         token: String,
         expires: Date

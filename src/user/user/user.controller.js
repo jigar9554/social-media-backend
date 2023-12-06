@@ -38,6 +38,10 @@ module.exports = class UserController {
   async login(req, res, next) {
     try {
       const user = await helpers.db.User.findOne({ $or: [{ email: req.body.email }, { mobile: req.body.email }] })
+      helpers.db.User.updateOne({
+        _id: new helpers.db.ObjectId(user._id)
+      }, { $set: { is_online: true } })
+      .exec()
 
       const token = jwt.sign({ sub: user._id }, config.get('accounts.jwt.key'), { expiresIn: config.get('accounts.jwt.exp') })
       res.status(200).json(
@@ -47,6 +51,26 @@ module.exports = class UserController {
             "userData": user.toJSON(),
             "token": token
           },
+        })
+      )
+    } catch (error) {
+      listeners.onError(error)
+      return res.status(500).json(
+        helpers.response.error({ msg: "Something went wrong!", field: null })
+      )
+    }
+  }
+
+  async logOut(req, res, next) {
+    try {
+      helpers.db.User.updateOne({
+        _id: new helpers.db.ObjectId(req.body.id)
+      }, { $set: { is_online: false } })
+      .exec()
+      res.status(200).json(
+        helpers.response.success({
+          msg: 'Logout successfully',
+          data: null
         })
       )
     } catch (error) {
