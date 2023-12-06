@@ -61,6 +61,26 @@ module.exports = class UserController {
     }
   }
 
+  async logOut(req, res, next) {
+    try {
+      helpers.db.User.updateOne({
+        _id: new helpers.db.ObjectId(req.body.id)
+      }, { $set: { is_online: false } })
+      .exec()
+      res.status(200).json(
+        helpers.response.success({
+          msg: 'Logout successfully',
+          data: null
+        })
+      )
+    } catch (error) {
+      listeners.onError(error)
+      return res.status(500).json(
+        helpers.response.error({ msg: "Something went wrong!", field: null })
+      )
+    }
+  }
+
   async getUserList(req, res, next) {
     helpers.db.User
       .aggregate([

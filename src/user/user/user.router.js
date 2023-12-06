@@ -61,6 +61,10 @@ module.exports = function (app) {
       userController.login(req, res, next)
     })
 
+    app.post('/logout', helpers.Authorize.checkUserAuth, function (req, res, next) {
+      userController.logOut(req, res, next)
+    })
+
     app.get('/get-users-list', helpers.Authorize.checkUserAuth, function (req, res, next) {
       userController.getUserList(req, res, next)
     })

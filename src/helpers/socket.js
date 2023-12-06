@@ -49,10 +49,11 @@ let connectedClient = (client) => {
       const userSockets = users[connectedUserId];
       listeners.onDebug("Disconnected User ID >> " + connectedUserId + " << Disconnected socket >>" + userSockets);
       userSockets.splice(userSockets.indexOf(client.id), 1);
+      console.log("After disconnect users >> ", users);
       if (userSockets.length === 0) {
+        sendOnlineOffline(connectedUserId, "USER_OFFLINE");
         delete users[connectedUserId];
       }
-      console.log("After disconnect users >> ", users);
     }
   });
 }
@@ -63,29 +64,11 @@ let userJoin = async (data, client) => {
   if (users[userId]) {
     users[userId].push(client.id);
   } else {
+    sendOnlineOffline(userId, "USER_ONLINE")
     users[userId] = [client.id];
   }
   console.log("After connect users >> ", users);
   
-  // get user friends
-  await db.UserFollowRequest
-    .find({ "to_id": new db.ObjectId(userId), "acceptStatus": true })
-    .select('-_id from_id')
-    .exec()
-    .then((result) => {
-      let sendUser = [...result.map(item => item.from_id.toString())]
-      io.in(sendUser).emit("USER_ONLINE", {
-        "userId": userId
-      });
-    })
-    .catch((err) => {
-      listeners.onError("Get friend list in chat")
-      listeners.onError(err)
-      listeners.onError("<<< >>>")
-      res.status(500).json({
-        error: err
-      })
-    });
   // io.in('65068f808cb9d33b5c1d2eb0').emit("hello", {
   //   'data': "Hii 1111"
   // });
@@ -130,6 +113,29 @@ let sendMessage = async (data, client) => {
     })
     .catch((err) => {
       listeners.onError("Send Message >> SEND_MESSAGE Socket call")
+      listeners.onError(err)
+      listeners.onError("<<< >>>")
+      res.status(500).json({
+        error: err
+      })
+    });
+}
+
+let sendOnlineOffline = async (userId, emitName) => {
+  console.log("Here send request >> ");
+  // get user friends
+  await db.UserFollowRequest
+    .find({ "to_id": new db.ObjectId(userId), "acceptStatus": true })
+    .select('-_id from_id')
+    .exec()
+    .then((result) => {
+      let sendUser = [...result.map(item => item.from_id.toString())]
+      io.in(sendUser).emit(emitName, {
+        "userId": userId
+      });
+    })
+    .catch((err) => {
+      listeners.onError("Get friend list in chat")
       listeners.onError(err)
       listeners.onError("<<< >>>")
       res.status(500).json({
