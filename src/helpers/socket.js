@@ -93,7 +93,7 @@ let followRequest = (data, client) => {
 }
 
 let userTyping = (data, client) => {
-  io.in(data.to_user.id).emit("TYPING", {
+  io.in(data.to_user._id).emit("TYPING", {
     "message": data.from_user + " is Typing..."
   });
 }
