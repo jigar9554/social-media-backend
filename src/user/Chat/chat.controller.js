@@ -3,13 +3,78 @@ const helpers = require('../../helpers/index')
 
 module.exports = class UserController {
   async getUserList(req, res, next) {
+    const userId = req.userData.sub;
     helpers.db.UserFollowRequest
-      .find({
-        "to_id": new helpers.db.ObjectId(req.userData.sub),
-        "acceptStatus": true
-      })
-      .populate('from_id',  'firstName lastName is_online profileImage')
+      // .find({ 
+      //   $or:[ 
+      //     {
+      //       "to_id": new helpers.db.ObjectId(req.userData.sub),
+      //       "acceptStatus": true
+      //     }, {
+      //       "from_id": new helpers.db.ObjectId(req.userData.sub),
+      //       "acceptStatus": true
+      //     }
+      //     // {'_id':objId}, {'name':param}, {'nickname':param} 
+      //   ]
+      // })
+      // .populate('from_id',  'firstName lastName is_online profileImage')
+      // .populate('to_id',  'firstName lastName is_online profileImage')
       // .where('acceptStatus').equals(true)
+      .aggregate([
+        {
+          $match: {
+            $or: [
+              {
+                "to_id": new helpers.db.ObjectId(req.userData.sub),
+                "acceptStatus": true
+              }, {
+                "from_id": new helpers.db.ObjectId(req.userData.sub),
+                "acceptStatus": true
+              }
+            ]
+          }
+        },
+        {
+          $project: {
+            userId: {
+              $cond: {
+                if: { $eq: ["$from_id", userId] },
+                then: "$to_id",
+                else: "$from_id"
+              }
+            },
+            status: 1
+          }
+        },
+        {
+          $match: {
+            userId: { $ne: new helpers.db.ObjectId(req.userData.sub) } // Exclude the user's own ID
+          }
+        },
+        {
+          $group: {
+            _id: '$userId',
+            friends: { $first: "$acceptStatus" }
+            // Add other fields or transformations as needed
+          }
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "from_id",
+          }
+        },
+        {
+          $unwind: "$from_id" // Unwind the array created by $lookup
+        },
+        {
+          $project: {
+            "from_id": 1
+          }
+        }
+      ])
       .exec()
       .then((result) => {
         res.status(200).json(
