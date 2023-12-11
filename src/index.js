@@ -53,7 +53,8 @@ app.use(i18n.init);
 // user api routes
 require('./user/user/user.router')(app);
 require('./user/friendRequest/friendRequest.router')(app);
-require('./user/Chat/chat.router')(app);
+require('./user/chat/chat.router')(app);
+require('./user/notification/notification.router')(app);
 
 app.use((req, res, next) => {
   const error = new Error("Not found");
