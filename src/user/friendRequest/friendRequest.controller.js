@@ -92,25 +92,48 @@ module.exports = class UserController {
     }
   }
 
-  // async followBack(req, res, next) {
-  //   helpers.db.UserFollowRequest.updateOne({
-  //     _id: req.body.id
-  //   }, { $set: { followBack: req.body.status } })
-  //   .exec()
-  //   .then((result) => {
-  //     res.status(200).json(
-  //       helpers.response.success({
-  //         msg: 'Follow back request sent successfully'
-  //       })
-  //     )
-  //   })
-  //   .catch((err) => {
-  //     listeners.onError("User >> follow back request")
-  //     listeners.onError(err)
-  //     listeners.onError("<<< >>>")
-  //     res.status(500).json({
-  //       error: err
-  //     })
-  //   });
-  // }
+  async acceptFollowBackRequest(req, res, next) {
+    let status = (req.body.status = 1) ? true : false;
+    helpers.db.UserFollowRequest.updateOne({
+      _id: req.body.id
+    }, { $set: { followBack: status, followBackStatus: status } })
+    .exec()
+    .then((result) => {
+      res.status(200).json(
+        helpers.response.success({
+          msg: 'You have successfully accept user follow back request'
+        })
+      )
+    })
+    .catch((err) => {
+      listeners.onError("User >> Accept or Reject follow back request")
+      listeners.onError(err)
+      listeners.onError("<<< >>>")
+      res.status(500).json({
+        error: err
+      })
+    });
+  }
+
+  async followBack(req, res, next) {
+    helpers.db.UserFollowRequest.updateOne({
+      _id: req.body.id
+    }, { $set: { followBack: true } })
+    .exec()
+    .then((result) => {
+      res.status(200).json(
+        helpers.response.success({
+          msg: 'Follow back request sent successfully'
+        })
+      )
+    })
+    .catch((err) => {
+      listeners.onError("User >> follow back request")
+      listeners.onError(err)
+      listeners.onError("<<< >>>")
+      res.status(500).json({
+        error: err
+      })
+    });
+  }
 }
