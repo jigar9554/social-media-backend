@@ -4,7 +4,7 @@ const helpers = require('../../helpers/index')
 module.exports = class UserController {
   async getUserList(req, res, next) {
     const userId = req.userData.sub;
-    helpers.db.UserFollowRequest
+        helpers.db.UserFollowRequest
       // .find({ 
       //   $or:[ 
       //     {
@@ -25,11 +25,11 @@ module.exports = class UserController {
           $match: {
             $or: [
               {
-                "to_id": new helpers.db.ObjectId(req.userData.sub),
-                "acceptStatus": true
-              }, {
                 "from_id": new helpers.db.ObjectId(req.userData.sub),
                 "acceptStatus": true
+              }, {
+                "to_id": new helpers.db.ObjectId(req.userData.sub),
+                "followBackStatus": true
               }
             ]
           }
@@ -38,31 +38,25 @@ module.exports = class UserController {
           $project: {
             userId: {
               $cond: {
-                if: { $eq: ["$from_id", userId] },
-                then: "$to_id",
-                else: "$from_id"
+                if: { $eq: ["$from_id", new helpers.db.ObjectId(userId)] },
+                then: "$from_id",
+                else: "$to_id"
               }
             },
             status: 1
           }
         },
         {
-          $match: {
-            userId: { $ne: new helpers.db.ObjectId(req.userData.sub) } // Exclude the user's own ID
-          }
-        },
-        {
-          $group: {
-            _id: '$userId',
-            friends: { $first: "$acceptStatus" }
-            // Add other fields or transformations as needed
-          }
-        },
-        {
           $lookup: {
             from: "users",
-            localField: "_id",
-            foreignField: "_id",
+            let: { userId: "$userId" },
+            pipeline: [{
+                $match: {
+                  $expr: {
+                    $eq: ["$_id", '$$userId']
+                  }
+                }
+            }],
             as: "from_id",
           }
         },
