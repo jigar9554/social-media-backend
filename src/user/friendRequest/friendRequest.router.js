@@ -27,9 +27,13 @@ module.exports = function (app) {
     app.post('/accept-reject-follow-request', helpers.Authorize.checkUserAuth, function (req, res, next) {
       usersRequestController.acceptFollowRequest(req, res, next);
     })
-
-    // app.post('/follow-back-request', helpers.Authorize.checkUserAuth, function (req, res, next) {
-    //   usersRequestController.followBack(req, res, next);
-    // })
+    
+    app.post('/accept-reject-follow-back-request', helpers.Authorize.checkUserAuth, function (req, res, next) {
+      usersRequestController.acceptFollowBackRequest(req, res, next);
+    })
+    
+    app.post('/follow-back-request', helpers.Authorize.checkUserAuth, function (req, res, next) {
+      usersRequestController.followBack(req, res, next);
+    })
   })
 }

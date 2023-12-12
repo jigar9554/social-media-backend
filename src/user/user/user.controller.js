@@ -82,7 +82,7 @@ module.exports = class UserController {
   }
 
   async getUserList(req, res, next) {
-    helpers.db.User
+        helpers.db.User
       .aggregate([
         // First Way
         // { $match: 
@@ -110,26 +110,19 @@ module.exports = class UserController {
             pipeline: [{
               $match: {
                 $expr: {
-                  $and: [
-                    { $eq: [new helpers.db.ObjectId(req.userData.sub), "$from_id"] },
-                    { $eq: ["$$userId", "$to_id"] }
-                  ]
-                }
-              }
-            }],
-            as: "following"
-          }
-        },
-        {
-          $lookup: {
-            from: "user_follow_requests",
-            let: { userId: "$_id" },
-            pipeline: [{
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: [new helpers.db.ObjectId(req.userData.sub), "$to_id"] },
-                    { $eq: ["$$userId", "$from_id"] }
+                  $or: [
+                    {
+                      $and:[
+                        { $eq: [new helpers.db.ObjectId(req.userData.sub), "$from_id"] },
+                        { $eq: ["$$userId", "$to_id"] }
+                      ]
+                    },
+                    {
+                      $and:[
+                        { $eq: [new helpers.db.ObjectId(req.userData.sub), "$to_id"] },
+                        { $eq: ["$$userId", "$from_id"] }
+                      ]
+                    }
                   ]
                 }
               }
@@ -137,18 +130,35 @@ module.exports = class UserController {
             as: "follow"
           }
         },
+        // {
+        //   $lookup: {
+        //     from: "user_follow_requests",
+        //     let: { userId: "$_id" },
+        //     pipeline: [{
+        //       $match: {
+        //         $expr: {
+        //           $and: [
+        //             { $eq: [new helpers.db.ObjectId(req.userData.sub), "$to_id"] },
+        //             { $eq: ["$$userId", "$from_id"] }
+        //           ]
+        //         }
+        //       }
+        //     }],
+        //     as: "follow"
+        //   }
+        // },
         {
           $unwind: {
             path: "$follow",
             preserveNullAndEmptyArrays: true
           }
         },
-        {
-          $unwind: {
-            path: "$following",
-            preserveNullAndEmptyArrays: true
-          }
-        },
+        // {
+        //   $unwind: {
+        //     path: "$following",
+        //     preserveNullAndEmptyArrays: true
+        //   }
+        // },
         { 
           $project : { 
             "_id": 1,
@@ -161,42 +171,55 @@ module.exports = class UserController {
             "created": 1,
             "userName": 1,
             "profileImage": 1,
-            "isFollow": {
-              // $ifNull: ["$follow.acceptStatus", false]
-              $cond: [
-                { $and: [
-                  { $ifNull: ["$follow", null] }
-                ]},
-                { $cond: [
-                  {$eq: ["$follow.acceptStatus", true]},
-                  true,
-                  false
-                ]},
-                null
-              ]
+            'isSender': {
+                $cond: [
+                  { $and: [
+                    { $ifNull: ["$follow", null] }
+                  ]},
+                  { $cond: [
+                    {$eq: ["$follow.from_id", new helpers.db.ObjectId(req.userData.sub)]},
+                    true,
+                    false
+                  ]},
+                  null
+                ]  
             },
-            "follow": {
+            // "isFollow": {
+            //   // $ifNull: ["$follow.acceptStatus", false]
+            //   $cond: [
+            //     { $and: [
+            //       { $ifNull: ["$follow", null] }
+            //     ]},
+            //     { $cond: [
+            //       {$eq: ["$follow.acceptStatus", true]},
+            //       true,
+            //       false
+            //     ]},
+            //     null
+            //   ]
+            // },
+            "followRequest": {
               // "$arrayElemAt": ["$follow", 0]
-              $ifNull: ["$follow", {}],
+              $ifNull: ["$follow", null],
             },
-            "isFollowing": {
-              // $ifNull: ["$following.acceptStatus", false]
-              $cond: [
-                { $and: [
-                  { $ifNull: ["$following", null] }
-                ]},
-                { $cond: [
-                  {$eq: ["$following.acceptStatus", true]},
-                  true,
-                  false
-                ]},
-                null
-              ]
-            },
-            "following": {
-              $ifNull: ["$following", {}],
-              // "$arrayElemAt": ["$following", 0]
-            }
+            // "isFollowing": {
+            //   // $ifNull: ["$following.acceptStatus", false]
+            //   $cond: [
+            //     { $and: [
+            //       { $ifNull: ["$following", null] }
+            //     ]},
+            //     { $cond: [
+            //       {$eq: ["$following.acceptStatus", true]},
+            //       true,
+            //       false
+            //     ]},
+            //     null
+            //   ]
+            // },
+            // "following": {
+            //   $ifNull: ["$following", {}],
+            //   // "$arrayElemAt": ["$following", 0]
+            // }
           }
         }
         // {
