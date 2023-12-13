@@ -148,11 +148,42 @@ let sendOnlineOffline = async (userId, emitName) => {
   console.log("Here send request >> ");
   // get user friends
   await db.UserFollowRequest
-    .find({ "to_id": new db.ObjectId(userId), "acceptStatus": true })
-    .select('-_id from_id')
+    .aggregate([
+      {
+        $match: {
+          $or: [
+            {
+              "from_id": new db.ObjectId(userId),
+              "acceptStatus": true
+            }, {
+              "to_id": new db.ObjectId(userId),
+              "acceptStatus": true
+            }
+          ]
+        }
+      }, {
+        $project: {
+          userId: {
+            $cond: {
+              if: { $eq: ["$from_id", new db.ObjectId(userId)] },
+              then: "$to_id",
+              else: "$from_id"
+            }
+          }
+        }
+      }, {
+        $project: {
+          "userId": {
+            $toString: "$userId"
+          },
+        }
+      }
+    ])
+    // .find({ "to_id": new db.ObjectId(userId), "acceptStatus": true })
+    // .select('-_id from_id')
     .exec()
     .then((result) => {
-      let sendUser = [...result.map(item => item.from_id.toString())]
+      let sendUser = [...result.map(item => item.userId)]
       io.in(sendUser).emit(emitName, {
         "userId": userId
       });
