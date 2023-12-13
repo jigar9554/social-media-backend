@@ -29,7 +29,8 @@ module.exports = class UserController {
                 "acceptStatus": true
               }, {
                 "to_id": new helpers.db.ObjectId(req.userData.sub),
-                "followBackStatus": true
+                "acceptStatus": true
+                // "followBackStatus": true
               }
             ]
           }
@@ -39,10 +40,11 @@ module.exports = class UserController {
             userId: {
               $cond: {
                 if: { $eq: ["$from_id", new helpers.db.ObjectId(userId)] },
-                then: "$from_id",
-                else: "$to_id"
+                then: "$to_id",
+                else: "$from_id"
               }
             },
+            lastMessage: 1,
             status: 1
           }
         },
@@ -65,7 +67,8 @@ module.exports = class UserController {
         },
         {
           $project: {
-            "from_id": 1
+            "from_id": 1,
+            "lastMessage": 1
           }
         }
       ])

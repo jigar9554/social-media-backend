@@ -94,7 +94,8 @@ let followRequest = (data, client) => {
 
 let userTyping = (data, client) => {
   io.in(data.to_user._id).emit("TYPING", {
-    "message": data.from_user + " is Typing..."
+    "message": data.from_user + " is Typing...",
+    "from_id": data.from_user_id
   });
 }
 
@@ -107,17 +108,39 @@ let sendMessage = async (data, client) => {
   })
   await sendMessage.save()
     .then((result) => {
-      io.in(data.to_id.id).emit("RECEIVE_MESSAGE", {
-        "data": data
+      db.UserFollowRequest
+      .updateOne({
+        $or:[
+          {
+            "to_id": new db.ObjectId(data.to_id.id),
+            "from_id": new db.ObjectId(data.from_id.id),
+          },
+          {
+            "to_id": new db.ObjectId(data.from_id.id),
+            "from_id": new db.ObjectId(data.to_id.id)
+          }
+        ]
+      }, { 
+        $set: { 
+          lastMessage: data.message
+        } 
+      })
+      .exec()
+      .then(async (result) => {
+        io.in(data.to_id.id).emit("RECEIVE_MESSAGE", {
+          "data": data
+        });
+      })
+      .catch((err) => {
+        listeners.onError("User >> Update user update Profile Detail")
+        listeners.onError(err)
+        listeners.onError("<<< >>>")
       });
     })
     .catch((err) => {
       listeners.onError("Send Message >> SEND_MESSAGE Socket call")
       listeners.onError(err)
       listeners.onError("<<< >>>")
-      res.status(500).json({
-        error: err
-      })
     });
 }
 
