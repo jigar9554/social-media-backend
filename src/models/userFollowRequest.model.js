@@ -18,7 +18,7 @@ const schema = new mongoose.Schema({
     followBackStatus: {
         type: Boolean, default: 0
     },
-    // followBack: { type: Boolean, default: 0 },
+    lastMessage: { type: String, required: false },
     created: { type: Date, default: Date.now },
     updated: Date
 });
