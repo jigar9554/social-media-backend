@@ -50,6 +50,24 @@ module.exports = class UserController {
         },
         {
           $lookup: {
+            from: "chats",
+            let: { toUserId: "$userId"},
+            pipeline: [{
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$to_id", new helpers.db.ObjectId(userId)] },
+                      { $eq: ["$from_id", '$$toUserId'] },
+                      { "is_read": 0}
+                    ]
+                  }
+                }
+            }],
+            as: "chat",
+          }
+        },
+        {
+          $lookup: {
             from: "users",
             let: { userId: "$userId" },
             pipeline: [{
@@ -68,6 +86,7 @@ module.exports = class UserController {
         {
           $project: {
             "from_id": 1,
+            "chat": 1,
             "lastMessage": 1
           }
         }
