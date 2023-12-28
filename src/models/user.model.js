@@ -13,6 +13,11 @@ const schema = new mongoose.Schema({
     role: { type: String, required: true },
     verified: Date,
     is_online: { type: Boolean, default: false },
+    active_chat: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: false
+    },
     resetToken: {
         token: String,
         expires: Date

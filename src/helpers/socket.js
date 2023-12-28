@@ -1,8 +1,10 @@
 const listeners = require('../bin/event-listeners')
 const db = require('./db.js');
-
+const user = require('../user/user/user.controller.js');
+const helpers = require('./index.js');
 let io
 // let rooms = [];
+const userController = new user()
 const users = {};
 
 let socketConnection = (server) => {
@@ -39,6 +41,9 @@ let connectedClient = (client) => {
         break;
       case 'SEND_MESSAGE':
         sendMessage(reqData, client);
+        break;
+      case 'READ_MESSAGE':
+        readMessage(reqData, client);
         break;
     }
   });
@@ -101,10 +106,13 @@ let userTyping = (data, client) => {
 
 let sendMessage = async (data, client) => {
   // store in DB
+  let userData = await db.User.findById(data.to_id.id);
+  data.is_read = (userData.active_chat == data.from_id.id);
   const sendMessage = db.Chat({
     "from_id": data.from_id.id,
     "to_id": data.to_id.id,
-    "message": data.message
+    "message": data.message,
+    "is_read": data.is_read
   })
   await sendMessage.save()
     .then((result) => {
@@ -127,7 +135,7 @@ let sendMessage = async (data, client) => {
       })
       .exec()
       .then(async (result) => {
-        io.in(data.to_id.id).emit("RECEIVE_MESSAGE", {
+        io.in([data.to_id.id, data.from_id.id]).emit("RECEIVE_MESSAGE", {
           "data": data
         });
       })
@@ -142,6 +150,31 @@ let sendMessage = async (data, client) => {
       listeners.onError(err)
       listeners.onError("<<< >>>")
     });
+}
+
+let readMessage = async (data, client) => {
+  db.Chat.updateMany({
+    "to_id": new db.ObjectId(data.to_id),
+    "from_id": new db.ObjectId(data.from_id),
+    "is_read": false
+  }, {
+    "is_read": true
+  })
+  .exec()
+  .then(async (result) => {
+    db.User.updateOne(
+      { _id: new db.ObjectId(data.to_id) },
+      { $set: { active_chat: data.from_id } }
+    ).exec();
+    io.in(data.from_id).emit('READ_MESSAGE', {
+      "from_id": data.to_id
+    });
+  })
+  .catch((err) => {
+    listeners.onError("Socket >> Read Message")
+    listeners.onError(err)
+    listeners.onError("<<< >>>")
+  });
 }
 
 let sendOnlineOffline = async (userId, emitName) => {
