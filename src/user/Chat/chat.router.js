@@ -28,5 +28,9 @@ module.exports = function (app) {
 
       chatController.sendMessage(req, res, next);
     });
+
+    // app.post('/read-message', helpers.Authorize.checkUserAuth, function (req, res, next) {
+    //   chatController.readMessage(req, res, next);
+    // });
   })
 }
