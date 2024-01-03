@@ -1,10 +1,8 @@
 const listeners = require('../bin/event-listeners')
 const db = require('./db.js');
-const user = require('../user/user/user.controller.js');
 const helpers = require('./index.js');
 let io
 // let rooms = [];
-const userController = new user()
 const users = {};
 
 let socketConnection = (server) => {
@@ -28,7 +26,7 @@ let connectedClient = (client) => {
       return false;
     }
     let en = data.en;
-    let reqData = data.data;
+    let reqData = data?.data;
     switch (en) {
       case 'USER_JOIN':
         userJoin(reqData, client);
@@ -44,6 +42,9 @@ let connectedClient = (client) => {
         break;
       case 'READ_MESSAGE':
         readMessage(reqData, client);
+        break;
+      case 'REMOVE_ACTIVE_CHAT':
+        removeActiveChat(reqData, client);
         break;
     }
   });
@@ -175,6 +176,13 @@ let readMessage = async (data, client) => {
     listeners.onError(err)
     listeners.onError("<<< >>>")
   });
+}
+
+let removeActiveChat = async (data, client) => {
+  db.User.updateOne(
+    { _id: new db.ObjectId(data.user_id) },
+    { $set: { active_chat: null } }
+  ).exec();
 }
 
 let sendOnlineOffline = async (userId, emitName) => {
