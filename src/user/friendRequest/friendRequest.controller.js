@@ -3,28 +3,116 @@ const helpers = require('../../helpers/index')
 
 module.exports = class UserController {
   async getRequestList(req, res, next) {
-    helpers.db.UserFollowRequest
-      .find({
-        "to_id": new helpers.db.ObjectId(req.userData.sub)
-      })
-      .populate('from_id',  'firstName lastName')
-      .exec()
-      .then((result) => {
-        res.status(200).json(
-          helpers.response.success({
-            msg: 'Follow request',
-            data: result
-          })
-        )
-      })
-      .catch((err) => {
-        listeners.onError("User Follow Request >> Get List")
-        listeners.onError(err)
-        listeners.onError("<<< >>>")
-        res.status(500).json({
-          error: err
+    // helpers.db.UserFollowRequest
+    //   .find({
+    //     "to_id": new helpers.db.ObjectId(req.userData.sub)
+    //   })
+    //   .populate('from_id',  'firstName lastName')
+    //   .exec()
+    //   .then((result) => {
+    //     res.status(200).json(
+    //       helpers.response.success({
+    //         msg: 'Follow request',
+    //         data: result
+    //       })
+    //     )
+    //   })
+    //   .catch((err) => {
+    //     listeners.onError("User Follow Request >> Get List")
+    //     listeners.onError(err)
+    //     listeners.onError("<<< >>>")
+    //     res.status(500).json({
+    //       error: err
+    //     })
+    //   });  
+    helpers.db.UserFollowRequest.aggregate([
+      {
+        $match: {
+          $or: [
+            {
+              "from_id": new helpers.db.ObjectId(req.userData.sub),
+              "acceptStatus": true,
+              "followBack": true,
+              "followBackStatus": false
+            }, {
+              "to_id": new helpers.db.ObjectId(req.userData.sub),
+              "followBack": false,
+            }
+          ]
+        }
+      },
+      {
+        $project: {
+          "from_id": 1,
+          "to_id": 1,
+          "acceptStatus" : 1,
+          "followBack" : 1,
+          "followBackStatus" : 1,
+          userId: {
+            $cond: {
+              if: { $eq: ["$from_id", new helpers.db.ObjectId(req.userData.sub  )] },
+              then: "$to_id",
+              else: "$from_id"
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          let: { userId: "$userId" },
+          pipeline: [{
+              $match: {
+                $expr: {
+                  $eq: ["$_id", '$$userId']
+                }
+              }
+          }],
+          as: "from_user",
+        }
+      },
+      {
+        $unwind: {
+          path: "$from_user",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      { 
+        $project : {
+          "_id": 1,
+          "from_id": 1,
+          "to_id": 1,
+          "from_user": 1,
+          "acceptStatus" : 1,
+          "followBack" : 1,
+          "followBackStatus" : 1,
+          'isSender': {
+            $cond: [
+              {$eq: ["$from_id", new helpers.db.ObjectId(req.userData.sub)]},
+              true,
+              false
+            ]
+          }
+        }
+      }
+    ])
+    .exec()
+    .then((result) => {
+      res.status(200).json(
+        helpers.response.success({
+          msg: 'Follow request',
+          data: result
         })
-      });    
+      )
+    })
+    .catch((err) => {
+      listeners.onError("User Follow Request >> Get List")
+      listeners.onError(err)
+      listeners.onError("<<< >>>")
+      res.status(500).json({
+        error: err
+      })
+    });
   }
 
   async followRequest(req, res, next) {
